@@ -6,7 +6,7 @@ import { Icon } from '@/components/Icon';
 import { Badge, Card, Chip, Gap, Row, Screen, SproutSays, T, tap } from '@/components/ui';
 import { AssetIcon, StateBadge, Term } from '@/components/widgets';
 import { ASSETS, AssetCategory, CATEGORY_LABEL, sortAssets } from '@/data/assets';
-import { fmtPrice, fmtUsd } from '@/domain/format';
+import { fmtPrice, fmtUnits, fmtUsd } from '@/domain/format';
 import { Goal, payRangePer100 } from '@/domain/pricing';
 import { useBoards } from '@/live/boards';
 import { useStore } from '@/store/app-store';
@@ -34,7 +34,9 @@ export default function Earn() {
     ASSETS.filter((a) => (goal === 'buy' ? a.buyLow : true))
       .filter((a) => cat === 'all' || a.category === cat)
       .filter((a) => !query || a.name.toLowerCase().includes(query) || a.ticker.toLowerCase().includes(query)),
+    state.balances.tokens,
   );
+  const showHoldings = goal === 'sell' && !!state.wallet && state.balances.loaded;
   // live offers for every priced asset on screen
   const boards = useBoards(
     list.filter((a) => a.state !== 'soon').map((a) => a.symbol),
@@ -131,6 +133,11 @@ export default function Earn() {
                     <StateBadge asset={a} />
                     {a.badge ? <Badge label={a.badge} color="#F1F4F8" fg={colors.muted} /> : null}
                   </Row>
+                  {showHoldings && !soon ? (
+                    <T v="tiny" color={(state.balances.tokens[a.symbol] ?? 0) > 0 ? colors.sproutDark : colors.muted}>
+                      You hold {fmtUnits(state.balances.tokens[a.symbol] ?? 0, a.symbol)} {a.ticker}
+                    </T>
+                  ) : null}
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <T v="tiny">Today</T>
@@ -144,7 +151,7 @@ export default function Earn() {
                     <T v="smallBold" color={colors.earn}>
                       {fmtUsd(range.min)}–{fmtUsd(range.max)}
                     </T>{' '}
-                    today
+                    today, depending on your target
                   </T>
                 </View>
               ) : (

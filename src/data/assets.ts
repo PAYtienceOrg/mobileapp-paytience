@@ -138,6 +138,8 @@ export function getAsset(symbol: string | undefined): Asset | undefined {
 }
 
 const STATE_ORDER: Record<MarketState, number> = { live: 0, quote: 1, soon: 2 };
-export function sortAssets(list: Asset[]): Asset[] {
-  return [...list].sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || a.name.localeCompare(b.name));
+/** Open assets first; among them Solana, then what the user holds, then by name. */
+export function sortAssets(list: Asset[], held: Record<string, number> = {}): Asset[] {
+  const rank = (a: Asset) => (a.symbol === 'SOL' ? 0 : (held[a.symbol] ?? 0) > 0 ? 1 : 2);
+  return [...list].sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || rank(a) - rank(b) || a.name.localeCompare(b.name));
 }

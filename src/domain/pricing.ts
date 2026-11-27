@@ -51,6 +51,21 @@ export function defaultEndDate(dates: EndDate[]): EndDate | undefined {
   return [...dates].sort((a, b) => Math.abs(a.days - 30) - Math.abs(b.days - 30))[0];
 }
 
+/** The dates nearest about a week, a month and three months, without repeats, soonest first. */
+export function quickDates(dates: EndDate[]): EndDate[] {
+  const picks = new Map<number, EndDate>();
+  for (const want of [7, 30, 90]) {
+    const near = [...dates].sort((a, b) => Math.abs(a.days - want) - Math.abs(b.days - want))[0];
+    if (near) picks.set(near.ts, near);
+  }
+  return [...picks.values()].sort((a, b) => a.ts - b.ts);
+}
+
+/** The target the asset page uses as its example: the second closest to today's price. */
+export function suggestedTarget(targets: TargetOption[]): TargetOption | undefined {
+  return targets[1] ?? targets[0];
+}
+
 function toTarget(goal: Goal, board: Board, row: BoardRow, c: BoardCell): TargetOption {
   // the board prices `board.amount`: whole tokens for Sell High, USDC for Buy Low
   const yieldUsd = Number(c.yield_amount) / 1e6;

@@ -129,6 +129,24 @@ export default function AssetDetail() {
         {canBuy ? <GoalCard selected={g === 'buy'} onPress={() => setGoal('buy')} emoji="⬇️" title="Buy Low" line={`I’d buy ${asset.name} at a lower price`} /> : null}
       </View>
 
+      {live && g === 'sell' && state.wallet && state.balances.loaded && !((state.balances.tokens[asset.symbol] ?? 0) > 0) ? (
+        <Card color={colors.warnSoft} style={{ marginTop: space.md }}>
+          <Row gap={space.sm} center={false}>
+            <Icon name="wallet" />
+            <View style={{ flex: 1, gap: space.sm }}>
+              <T v="small" color={colors.ink}>
+                <T v="smallBold">You don’t hold any {asset.ticker} yet.</T> Sell High needs some to lock.
+                {canBuy ? ' Buy Low works with the dollars you have.' : ''}
+              </T>
+              <Row gap={space.sm} style={{ flexWrap: 'wrap' }}>
+                {canBuy ? <Button small title="Switch to Buy Low" onPress={() => setGoal('buy')} /> : null}
+                <Button small kind="secondary" title="Get practice money" onPress={() => router.push('/practice')} />
+              </Row>
+            </View>
+          </Row>
+        </Card>
+      ) : null}
+
       {example && end ? (
         <>
           <SectionTitle title="How it works" />
