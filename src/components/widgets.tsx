@@ -9,7 +9,7 @@ import { Coin, Pot } from '@/components/Art';
 import { Icon } from '@/components/Icon';
 import { Sprout } from '@/components/Sprout';
 import { Badge, Button, Card, Gap, Row, T, tap } from '@/components/ui';
-import { Asset, getAsset } from '@/data/assets';
+import { Asset, getAsset, isPaused } from '@/data/assets';
 import { GLOSSARY, TermId } from '@/data/learn';
 import { Deal, dealStatus, DealStatus, growthStage, lockedLabel, progress, STATUS_LABEL } from '@/domain/deals';
 import { fmtCountdown, fmtDay, fmtPrice, fmtRelative, fmtUnits, fmtUsd } from '@/domain/format';
@@ -38,6 +38,7 @@ export function AssetIcon({ asset, size = 44 }: { asset: Asset | undefined; size
 }
 
 export function StateBadge({ asset }: { asset: Asset }) {
+  if (isPaused(asset)) return <Badge label="Paused" color={colors.warnSoft} fg={colors.warn} />;
   if (asset.state === 'live') return <Badge label="Live" color={colors.earnSoft} fg={colors.earn} />;
   if (asset.state === 'quote') return <Badge label="Preview" color={colors.blueSoft} />;
   return <Badge label="Coming soon" color="#EEF1F5" fg={colors.muted} />;

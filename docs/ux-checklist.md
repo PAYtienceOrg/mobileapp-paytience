@@ -16,3 +16,10 @@ Found by walking Sell High and Buy Low on a 375 × 812 viewport (2026-11-27). Ou
   - Fix: preselect the second-closest target (same as the asset page example), show why Next is disabled, move the empty state to the top.
 - [x] **7. Earn sort order.** Alphabetical, so Solana sits far down.
   - Fix: Solana and assets you hold first.
+
+## Round 2 (branch ux/paused-prices-and-no-holdings)
+
+- [x] **8. Stale prices still showed "Live".** `fresh: false` from `/health` was stored but never read, so SpaceX showed "Live" with price "—", let you continue, and its board returned 400 every minute.
+  - Fix: a "Paused" badge on Earn and the asset page, a "Paused for now" note with the button disabled, paused assets sort after open ones, and their boards are no longer requested. The wizard blocks too.
+- [x] **9. With none of the token, the big button still said "Continue with Sell High".** The warning card was only a hint, and "Get practice money" showed even for tokens the practice page cannot give (SOL, QQQ…).
+  - Fix: the main button becomes "Get practice TSLA" when the practice page has that token, otherwise "Switch to Buy Low"; "Just see the offers" stays as a small option. The wizard shows "Preview · you hold 0 SOL", and step 3's button becomes "Get practice TSLA" or explains why the deal can't open. The practice token list now lives in `src/data/practice.ts`, shared by the practice page and these checks.

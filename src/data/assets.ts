@@ -137,9 +137,17 @@ export function getAsset(symbol: string | undefined): Asset | undefined {
   return symbol ? ASSET_BY_SYMBOL[symbol] : undefined;
 }
 
+/** Listed, but the backend's price for it is stale (`fresh: false`), so no offers can be made right now. */
+export function isPaused(a: Asset): boolean {
+  return a.state !== 'soon' && !a.fresh;
+}
+
 const STATE_ORDER: Record<MarketState, number> = { live: 0, quote: 1, soon: 2 };
-/** Open assets first; among them Solana, then what the user holds, then by name. */
+/** Open assets first, paused ones after them; among them Solana, then what the user holds, then by name. */
 export function sortAssets(list: Asset[], held: Record<string, number> = {}): Asset[] {
   const rank = (a: Asset) => (a.symbol === 'SOL' ? 0 : (held[a.symbol] ?? 0) > 0 ? 1 : 2);
-  return [...list].sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || rank(a) - rank(b) || a.name.localeCompare(b.name));
+  return [...list].sort(
+    (a, b) =>
+      STATE_ORDER[a.state] - STATE_ORDER[b.state] || Number(isPaused(a)) - Number(isPaused(b)) || rank(a) - rank(b) || a.name.localeCompare(b.name),
+  );
 }

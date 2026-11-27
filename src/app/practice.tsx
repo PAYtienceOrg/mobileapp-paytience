@@ -6,6 +6,7 @@ import { Sprout } from '@/components/Sprout';
 import { Badge, Button, Card, Gap, Header, ProgressBar, Row, Screen, SproutSays, T, tap } from '@/components/ui';
 import { AssetIcon, CoinShower } from '@/components/widgets';
 import { Asset, getAsset } from '@/data/assets';
+import { FAUCET_USD, PRACTICE_CHOICES as CHOICES } from '@/data/practice';
 import { fmtUnits, fmtUsd } from '@/domain/format';
 import { friendly } from '@/live/api';
 import { useNow, useStore } from '@/store/app-store';
@@ -29,15 +30,6 @@ const DOLLARS: Asset = {
   mint: null,
   payoutDecimals: 6,
 };
-
-/** What one top-up is worth; the backend decides the real amount (GET /faucet). */
-const FAUCET_USD = 1000;
-
-const CHOICES: { token: string; title: string; subtitle: string }[] = [
-  { token: 'USDC', title: `${fmtUsd(FAUCET_USD).replace('.00', '')} digital dollars`, subtitle: 'For Buy Low deals. Comes with a little test SOL.' },
-  { token: 'TSLAon', title: `${fmtUsd(FAUCET_USD).replace('.00', '')} of Tesla`, subtitle: 'A stock token for Sell High deals' },
-  { token: 'WBTC', title: `${fmtUsd(FAUCET_USD).replace('.00', '')} of Bitcoin`, subtitle: 'For Sell High deals' },
-];
 
 /** The real top-up takes up to ~30 s; the bar creeps towards 90% while we wait. */
 const EXPECTED = 15_000;

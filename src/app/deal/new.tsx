@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { Button, Card, Chip, Gap, Header, ProgressBar, Row, Screen, SproutSays, T, tap } from '@/components/ui';
+import { Badge, Button, Card, Chip, Gap, Header, ProgressBar, Row, Screen, SproutSays, T, tap } from '@/components/ui';
 import { InfoDot, Term } from '@/components/widgets';
-import { getAsset } from '@/data/assets';
+import { getAsset, isPaused } from '@/data/assets';
+import { hasPracticeToken } from '@/data/practice';
 import { fmtDay, fmtPrice, fmtSignedPct, fmtTime, fmtUnits, fmtUsd } from '@/domain/format';
 import { dealMath, defaultEndDate, endDatesOf, Goal, LIMITS, quickDates, suggestedTarget, targetsOf } from '@/domain/pricing';
 import { useBoard } from '@/live/boards';
@@ -25,7 +26,7 @@ export default function NewDeal() {
   const { state } = useStore();
 
   // dates and targets come from the backend's live board for this asset
-  const { board, loading, error } = useBoard(asset?.symbol, goal);
+  const { board, loading, error } = useBoard(asset && !isPaused(asset) ? asset.symbol : undefined, goal);
   const dates = endDatesOf(board);
   const [step, setStep] = useState<Step>(0);
   const [pickedEnd, setPickedEnd] = useState<number | undefined>(undefined);
@@ -121,11 +122,27 @@ export default function NewDeal() {
     }
   };
 
+  const paused = isPaused(asset);
+  // Sell High with none of the token: the user can look at offers, but not open a deal
+  const preview = goal === 'sell' && !!state.wallet && state.balances.loaded && !(balance > 0);
+  const practiceToken = goal === 'sell' ? asset.symbol : 'USDC';
+  const practiceOk = hasPracticeToken(practiceToken);
+  const practiceName = goal === 'sell' ? asset.ticker : 'money';
+  const getPractice = step === 2 && overBalance && !amountError && practiceOk;
+
   let blocked: string | null = null;
-  if (step < 2 && !board && loading) blocked = 'Loading live offers…';
+  if (paused) blocked = `Prices for ${asset.name} are paused right now. Try again soon.`;
+  else if (step < 2 && !board && loading) blocked = 'Loading live offers…';
   else if (step === 0 && !end) blocked = 'Pick an end date to continue.';
   else if (step === 1 && !target) blocked = targets.length === 0 ? 'No offers for this date. Pick another date.' : 'Pick a target price to continue.';
-  else if (step === 2) blocked = amountError ?? (overBalance ? `You have ${balanceLabel}. Lower the amount or get practice money.` : null);
+  else if (step === 2)
+    blocked =
+      amountError ??
+      (!overBalance
+        ? null
+        : practiceOk
+          ? `You have ${balanceLabel}. Lower the amount or get free practice ${practiceName}.`
+          : `You have ${balanceLabel}, and practice ${practiceName} isn’t available yet.${canBuy ? ' Tap Sell High above to switch to Buy Low.' : ''}`);
 
   return (
     <Screen
@@ -161,6 +178,7 @@ export default function NewDeal() {
                 done={!!target && step > 1}
                 onPress={end ? () => goTo(1) : undefined}
               />
+              {preview ? <Badge label={`Preview · you hold 0 ${asset.ticker}`} color={colors.warnSoft} fg={colors.warn} /> : null}
             </Row>
           </View>
         </View>
@@ -181,7 +199,11 @@ export default function NewDeal() {
               {blocked}
             </T>
           ) : null}
-          <Button title={step === 2 ? 'Review deal' : 'Next'} disabled={!!blocked} onPress={next} />
+          {getPractice ? (
+            <Button title={`Get practice ${practiceName}`} icon="gift" onPress={() => router.push('/practice')} />
+          ) : (
+            <Button title={step === 2 ? 'Review deal' : 'Next'} disabled={!!blocked} onPress={next} />
+          )}
         </View>
       }>
       <Gap h={space.md} />
@@ -377,14 +399,14 @@ export default function NewDeal() {
             ) : null}
           </Card>
 
-          {overBalance || !state.wallet ? (
+          {!state.wallet || (overBalance && practiceOk) ? (
             <Card color={colors.warnSoft} style={{ marginTop: space.md }} onPress={() => router.push(state.wallet ? '/practice' : '/sign-in')}>
               <Row gap={space.sm}>
                 <Icon name="wallet" />
                 <T v="small" color={colors.ink} style={{ flex: 1 }}>
                   {!state.wallet
                     ? 'You’ll need a free wallet with practice money. Tap to set one up. It takes 10 seconds.'
-                    : `That’s more than you have (${balanceLabel}). Tap to get free practice money.`}
+                    : `That’s more than you have (${balanceLabel}). Tap to get free practice ${practiceName}.`}
                 </T>
                 <Icon name="chevron" />
               </Row>
