@@ -6,7 +6,7 @@ import { Icon } from '@/components/Icon';
 import { Sprout } from '@/components/Sprout';
 import { Badge, Button, Card, Gap, Header, Row, Screen, SectionTitle, SproutSays, T } from '@/components/ui';
 import { AssetIcon, StateBadge, Term } from '@/components/widgets';
-import { getAsset, isPaused } from '@/data/assets';
+import { getAsset, isPaused, spendable } from '@/data/assets';
 import { hasPracticeToken } from '@/data/practice';
 import { fmtPrice, fmtUsd } from '@/domain/format';
 import { defaultEndDate, endDatesOf, Goal, targetsOf } from '@/domain/pricing';
@@ -69,13 +69,13 @@ export default function AssetDetail() {
   const paused = isPaused(asset);
   const live = asset.state === 'live' && !paused;
   // Sell High needs the token itself; with none, lead with what the user can actually do
-  const noHolding = live && g === 'sell' && !!state.wallet && state.balances.loaded && !((state.balances.tokens[asset.symbol] ?? 0) > 0);
+  const noHolding = live && g === 'sell' && !!state.wallet && state.balances.loaded && !(spendable(state.balances.tokens, asset.symbol) > 0);
   const practiceOk = hasPracticeToken(asset.symbol);
   const openWizard = (goal: Goal) => router.push({ pathname: '/deal/new', params: { symbol: asset.symbol, goal } });
   const noHoldingFooter = (
     <View style={{ gap: space.sm }}>
       {practiceOk ? (
-        <Button title={`Get practice ${asset.ticker}`} icon="gift" onPress={() => router.push('/practice')} />
+        <Button title={`Get practice ${asset.ticker}`} icon="gift" onPress={() => router.push({ pathname: '/practice', params: { resume: '1' } })} />
       ) : canBuy ? (
         <Button title="Switch to Buy Low" onPress={() => setGoal('buy')} />
       ) : null}

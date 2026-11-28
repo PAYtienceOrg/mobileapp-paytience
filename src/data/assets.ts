@@ -151,3 +151,12 @@ export function sortAssets(list: Asset[], held: Record<string, number> = {}): As
       STATE_ORDER[a.state] - STATE_ORDER[b.state] || Number(isPaused(a)) - Number(isPaused(b)) || rank(a) - rank(b) || a.name.localeCompare(b.name),
   );
 }
+
+/** SOL also pays network fees (collecting a payout yourself, for one), so deals never lock the last bit of it. */
+export const SOL_FEE_RESERVE = 0.02;
+
+/** How much of a token a deal may lock: all of it, except the SOL kept back for fees. */
+export function spendable(tokens: Record<string, number>, symbol: string): number {
+  const bal = tokens[symbol] ?? 0;
+  return symbol === 'SOL' ? Math.max(0, bal - SOL_FEE_RESERVE) : bal;
+}

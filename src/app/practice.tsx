@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
@@ -40,7 +40,15 @@ function assetFor(token: string): Asset | undefined {
   return token === 'USDC' ? DOLLARS : getAsset(token);
 }
 
+/** Where "Start a deal" leads: back into the deal the user came from, else to the deal this money is for. */
+function startDeal(token: string, resume: boolean) {
+  if (resume && router.canGoBack()) router.back();
+  else if (token === 'USDC') router.replace({ pathname: '/(tabs)/earn', params: { goal: 'buy' } });
+  else router.replace({ pathname: '/asset/[symbol]', params: { symbol: token, goal: 'sell' } });
+}
+
 export default function Practice() {
+  const { resume } = useLocalSearchParams<{ resume?: string }>();
   const { state, actions } = useStore();
   useNow(30_000); // re-render so the "More in N min" countdown stays fresh
   const [phase, setPhase] = useState<Phase>({ kind: 'pick' });
@@ -115,7 +123,11 @@ export default function Practice() {
           contentStyle={{ alignItems: 'center', paddingTop: space.xl }}
           footer={
             <View style={{ gap: space.sm }}>
-              <Button title="Start a deal" kind="sun" onPress={() => router.replace('/(tabs)/earn')} />
+              <Button
+                title={resume ? 'Back to my deal' : isDollars ? 'Start a Buy Low deal' : 'Start a Sell High deal'}
+                kind="sun"
+                onPress={() => startDeal(phase.token, !!resume)}
+              />
               <Button title="Get more practice money" kind="ghost" onPress={() => setPhase({ kind: 'pick' })} />
             </View>
           }>

@@ -23,3 +23,14 @@ Found by walking Sell High and Buy Low on a 375 × 812 viewport (2026-11-27). Ou
   - Fix: a "Paused" badge on Earn and the asset page, a "Paused for now" note with the button disabled, paused assets sort after open ones, and their boards are no longer requested. The wizard blocks too.
 - [x] **9. With none of the token, the big button still said "Continue with Sell High".** The warning card was only a hint, and "Get practice money" showed even for tokens the practice page cannot give (SOL, QQQ…).
   - Fix: the main button becomes "Get practice TSLA" when the practice page has that token, otherwise "Switch to Buy Low"; "Just see the offers" stays as a small option. The wizard shows "Preview · you hold 0 SOL", and step 3's button becomes "Get practice TSLA" or explains why the deal can't open. The practice token list now lives in `src/data/practice.ts`, shared by the practice page and these checks.
+
+## Round 3 (branch ux/first-deal-path)
+
+Found by walking the app as a brand-new user, from onboarding to slide-to-approve (2026-11-28).
+
+- [x] **10. "Start a deal" after practice money went to the wrong mode.** It always opened Earn, which follows the onboarding answer; after picking "I own crypto" and getting practice dollars, the user landed on Sell High.
+  - Fix: practice dollars lead to Earn in Buy Low; Tesla or Bitcoin lead to that asset in Sell High. Opened from an asset page, the wizard or review, the button says "Back to my deal" and returns there.
+- [x] **11. Max locked all the SOL, including what pays fees.** The 0.5 test SOL that comes with practice dollars also pays network fees, such as collecting a payout yourself if it doesn't arrive.
+  - Fix: Sell High on SOL keeps 0.02 SOL back (`spendable()` in `src/data/assets.ts`), used by the asset page, the wizard and review. The wizard says "Free to lock: 0.48 SOL (0.02 SOL kept for network fees)".
+- [x] **12. Getting started was below the fold on Home.** New users first saw $0.00 and an empty garden.
+  - Fix: the checklist sits at the top of Home until it's done.

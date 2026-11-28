@@ -69,6 +69,32 @@ export default function Home() {
         </Card>
       ) : null}
 
+      {/* until the first deal, the next step comes first */}
+      {!checklistDone ? (
+        <>
+          <SectionTitle title="Getting started" />
+          <Card>
+            {checklist.map((c, i) => (
+              <Pressable
+                key={c.label}
+                accessibilityRole="button"
+                disabled={c.done}
+                onPress={() => {
+                  tap();
+                  c.go();
+                }}
+                style={[styles.checkRow, i > 0 && { borderTopWidth: 2, borderTopColor: colors.border }]}>
+                <View style={[styles.checkDot, c.done && { backgroundColor: colors.sprout }]}>{c.done ? <Icon name="check" size={14} color="#fff" /> : <T v="tiny">{i + 1}</T>}</View>
+                <T v={c.done ? 'small' : 'bodyBold'} style={[{ flex: 1 }, c.done && { textDecorationLine: 'line-through' }]}>
+                  {c.label}
+                </T>
+                {!c.done ? <Icon name="chevron" size={18} color={colors.muted} /> : null}
+              </Pressable>
+            ))}
+          </Card>
+        </>
+      ) : null}
+
       {/* Coin Jar */}
       <Card style={{ marginTop: space.lg }}>
         <Row style={{ justifyContent: 'space-between' }} center={false}>
@@ -150,30 +176,6 @@ export default function Home() {
         Plants grow as time passes, not money. Your pay already arrived.
       </T>
 
-      {!checklistDone ? (
-        <>
-          <SectionTitle title="Getting started" />
-          <Card>
-            {checklist.map((c, i) => (
-              <Pressable
-                key={c.label}
-                accessibilityRole="button"
-                disabled={c.done}
-                onPress={() => {
-                  tap();
-                  c.go();
-                }}
-                style={[styles.checkRow, i > 0 && { borderTopWidth: 2, borderTopColor: colors.border }]}>
-                <View style={[styles.checkDot, c.done && { backgroundColor: colors.sprout }]}>{c.done ? <Icon name="check" size={14} color="#fff" /> : <T v="tiny">{i + 1}</T>}</View>
-                <T v={c.done ? 'small' : 'bodyBold'} style={[{ flex: 1 }, c.done && { textDecorationLine: 'line-through' }]}>
-                  {c.label}
-                </T>
-                {!c.done ? <Icon name="chevron" size={18} color={colors.muted} /> : null}
-              </Pressable>
-            ))}
-          </Card>
-        </>
-      ) : null}
 
       {/* Quick start */}
       <SectionTitle title="Start a deal" />

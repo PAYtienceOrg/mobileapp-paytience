@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { Badge, Button, Card, Chip, Gap, Header, ProgressBar, Row, Screen, SproutSays, T, tap } from '@/components/ui';
 import { InfoDot, Term } from '@/components/widgets';
-import { getAsset, isPaused } from '@/data/assets';
+import { getAsset, isPaused, SOL_FEE_RESERVE, spendable } from '@/data/assets';
 import { hasPracticeToken } from '@/data/practice';
 import { fmtDay, fmtPrice, fmtSignedPct, fmtTime, fmtUnits, fmtUsd } from '@/domain/format';
 import { dealMath, defaultEndDate, endDatesOf, Goal, LIMITS, quickDates, suggestedTarget, targetsOf } from '@/domain/pricing';
@@ -54,7 +54,7 @@ export default function NewDeal() {
   // until the user picks, suggest the same target the asset page used as its example
   const target = picked ?? suggestedTarget(targets);
 
-  const holdingFor = (g: Goal) => (!asset ? 0 : g === 'sell' ? state.balances.tokens[asset.symbol] ?? 0 : state.balances.usdc);
+  const holdingFor = (g: Goal) => (!asset ? 0 : g === 'sell' ? spendable(state.balances.tokens, asset.symbol) : state.balances.usdc);
   const defaultAmount = (g: Goal) => {
     if (g === 'buy' || !asset) return g === 'buy' ? '100' : '1';
     const bal = holdingFor('sell');
@@ -140,7 +140,9 @@ export default function NewDeal() {
       amountError ??
       (!overBalance
         ? null
-        : practiceOk
+        : goal === 'sell' && asset.symbol === 'SOL' && balance > 0
+          ? `You can lock up to ${balanceLabel}. ${SOL_FEE_RESERVE} SOL stays in your wallet for network fees.`
+          : practiceOk
           ? `You have ${balanceLabel}. Lower the amount or get free practice ${practiceName}.`
           : `You have ${balanceLabel}, and practice ${practiceName} isn’t available yet.${canBuy ? ' Tap Sell High above to switch to Buy Low.' : ''}`);
 
@@ -200,7 +202,7 @@ export default function NewDeal() {
             </T>
           ) : null}
           {getPractice ? (
-            <Button title={`Get practice ${practiceName}`} icon="gift" onPress={() => router.push('/practice')} />
+            <Button title={`Get practice ${practiceName}`} icon="gift" onPress={() => router.push({ pathname: '/practice', params: { resume: '1' } })} />
           ) : (
             <Button title={step === 2 ? 'Review deal' : 'Next'} disabled={!!blocked} onPress={next} />
           )}
@@ -383,7 +385,8 @@ export default function NewDeal() {
             </Row>
             <T v="small">
               {goal === 'sell' ? `≈ ${fmtUsd(amount * asset.price)} today · ` : ''}
-              Practice balance: {state.wallet ? balanceLabel : '—'}
+              {goal === 'sell' && asset.symbol === 'SOL' ? 'Free to lock' : 'Practice balance'}: {state.wallet ? balanceLabel : '—'}
+              {goal === 'sell' && asset.symbol === 'SOL' && state.wallet ? ` (${SOL_FEE_RESERVE} SOL kept for network fees)` : ''}
             </T>
             {state.wallet && balance > 0 ? (
               <Row gap={space.sm} style={{ flexWrap: 'wrap', marginTop: space.md }}>
@@ -400,7 +403,7 @@ export default function NewDeal() {
           </Card>
 
           {!state.wallet || (overBalance && practiceOk) ? (
-            <Card color={colors.warnSoft} style={{ marginTop: space.md }} onPress={() => router.push(state.wallet ? '/practice' : '/sign-in')}>
+            <Card color={colors.warnSoft} style={{ marginTop: space.md }} onPress={() => (state.wallet ? router.push({ pathname: '/practice', params: { resume: '1' } }) : router.push('/sign-in'))}>
               <Row gap={space.sm}>
                 <Icon name="wallet" />
                 <T v="small" color={colors.ink} style={{ flex: 1 }}>
