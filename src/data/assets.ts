@@ -137,7 +137,26 @@ export function getAsset(symbol: string | undefined): Asset | undefined {
   return symbol ? ASSET_BY_SYMBOL[symbol] : undefined;
 }
 
+/** Listed, but the backend's price for it is stale (`fresh: false`), so no offers can be made right now. */
+export function isPaused(a: Asset): boolean {
+  return a.state !== 'soon' && !a.fresh;
+}
+
 const STATE_ORDER: Record<MarketState, number> = { live: 0, quote: 1, soon: 2 };
-export function sortAssets(list: Asset[]): Asset[] {
-  return [...list].sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || a.name.localeCompare(b.name));
+/** Open assets first, paused ones after them; among them Solana, then what the user holds, then by name. */
+export function sortAssets(list: Asset[], held: Record<string, number> = {}): Asset[] {
+  const rank = (a: Asset) => (a.symbol === 'SOL' ? 0 : (held[a.symbol] ?? 0) > 0 ? 1 : 2);
+  return [...list].sort(
+    (a, b) =>
+      STATE_ORDER[a.state] - STATE_ORDER[b.state] || Number(isPaused(a)) - Number(isPaused(b)) || rank(a) - rank(b) || a.name.localeCompare(b.name),
+  );
+}
+
+/** SOL also pays network fees (collecting a payout yourself, for one), so deals never lock the last bit of it. */
+export const SOL_FEE_RESERVE = 0.02;
+
+/** How much of a token a deal may lock: all of it, except the SOL kept back for fees. */
+export function spendable(tokens: Record<string, number>, symbol: string): number {
+  const bal = tokens[symbol] ?? 0;
+  return symbol === 'SOL' ? Math.max(0, bal - SOL_FEE_RESERVE) : bal;
 }

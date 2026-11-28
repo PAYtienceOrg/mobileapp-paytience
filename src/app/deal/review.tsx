@@ -6,7 +6,7 @@ import { Icon } from '@/components/Icon';
 import { Sprout } from '@/components/Sprout';
 import { Button, Card, Gap, Header, Row, Screen, T, tap } from '@/components/ui';
 import { AssetIcon, CountdownRing, InfoDot, OutcomeCards, SlideToApprove, Term } from '@/components/widgets';
-import { getAsset } from '@/data/assets';
+import { getAsset, spendable } from '@/data/assets';
 import { fmtDay, fmtPct, fmtPrice, fmtTime, fmtUnits, fmtUsd } from '@/domain/format';
 import { dealMath, Goal, targetsOf } from '@/domain/pricing';
 import { friendly } from '@/live/api';
@@ -145,7 +145,7 @@ export default function Review() {
 
   const lockLabel = goal === 'sell' ? `${fmtUnits(amount, asset.symbol)} ${asset.ticker}` : fmtUsd(amount);
   const ifSwapLabel = goal === 'sell' ? fmtUsd(math.ifSwapGet) : `${fmtUnits(math.ifSwapGet, asset.symbol)} ${asset.ticker}`;
-  const balance = goal === 'sell' ? state.balances.tokens[asset.symbol] ?? 0 : state.balances.usdc;
+  const balance = goal === 'sell' ? spendable(state.balances.tokens, asset.symbol) : state.balances.usdc;
   const here = `/deal/review?symbol=${asset.symbol}&goal=${goal}&end=${endTs}&target=${targetPrice}&amount=${amount}`;
 
   const retry = () => {
@@ -157,7 +157,7 @@ export default function Review() {
   const gate: { label: string; go: () => void } | null = !state.wallet
     ? { label: 'Create a free wallet to continue', go: () => router.push({ pathname: '/sign-in', params: { next: here } }) }
     : state.balances.loaded && amount > balance + 1e-9
-      ? { label: 'Get practice money to continue', go: () => router.push('/practice') }
+      ? { label: 'Get practice money to continue', go: () => router.push({ pathname: '/practice', params: { resume: '1' } }) }
       : !state.primerDone
         ? { label: 'Quick safety check first (30 s)', go: () => router.push({ pathname: '/primer', params: { next: here } }) }
         : phase === 'declined' || phase === 'error'

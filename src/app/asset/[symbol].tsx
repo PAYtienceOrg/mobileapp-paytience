@@ -6,7 +6,8 @@ import { Icon } from '@/components/Icon';
 import { Sprout } from '@/components/Sprout';
 import { Badge, Button, Card, Gap, Header, Row, Screen, SectionTitle, SproutSays, T } from '@/components/ui';
 import { AssetIcon, StateBadge, Term } from '@/components/widgets';
-import { getAsset } from '@/data/assets';
+import { getAsset, isPaused, spendable } from '@/data/assets';
+import { hasPracticeToken } from '@/data/practice';
 import { fmtPrice, fmtUsd } from '@/domain/format';
 import { defaultEndDate, endDatesOf, Goal, targetsOf } from '@/domain/pricing';
 import { useBoard } from '@/live/boards';
@@ -19,7 +20,7 @@ export default function AssetDetail() {
   const { state, actions } = useStore();
   const [goal, setGoal] = useState<Goal>(goalParam === 'sell' ? 'sell' : goalParam === 'buy' ? 'buy' : 'buy');
   const g: Goal = goal === 'buy' && asset && !asset.buyLow ? 'sell' : goal;
-  const { board } = useBoard(asset && asset.state !== 'soon' ? asset.symbol : undefined, g);
+  const { board } = useBoard(asset && asset.state !== 'soon' && !isPaused(asset) ? asset.symbol : undefined, g);
 
   if (!asset) {
     return (
@@ -65,19 +66,38 @@ export default function AssetDetail() {
     );
   }
 
-  const live = asset.state === 'live';
+  const paused = isPaused(asset);
+  const live = asset.state === 'live' && !paused;
+  // Sell High needs the token itself; with none, lead with what the user can actually do
+  const noHolding = live && g === 'sell' && !!state.wallet && state.balances.loaded && !(spendable(state.balances.tokens, asset.symbol) > 0);
+  const practiceOk = hasPracticeToken(asset.symbol);
+  const openWizard = (goal: Goal) => router.push({ pathname: '/deal/new', params: { symbol: asset.symbol, goal } });
+  const noHoldingFooter = (
+    <View style={{ gap: space.sm }}>
+      {practiceOk ? (
+        <Button title={`Get practice ${asset.ticker}`} icon="gift" onPress={() => router.push({ pathname: '/practice', params: { resume: '1' } })} />
+      ) : canBuy ? (
+        <Button title="Switch to Buy Low" onPress={() => setGoal('buy')} />
+      ) : null}
+      <Row gap={space.sm}>
+        {practiceOk && canBuy ? <Button title="Switch to Buy Low" kind="secondary" small style={{ flex: 1 }} onPress={() => setGoal('buy')} /> : null}
+        <Button title="Just see the offers" kind={practiceOk || canBuy ? 'ghost' : 'secondary'} small style={{ flex: 1 }} onPress={() => openWizard('sell')} />
+      </Row>
+    </View>
+  );
 
   return (
     <Screen
       header={<Header title={asset.name} />}
       footer={
-        live ? (
-          <Button
-            title={`Continue with ${g === 'sell' ? 'Sell High' : 'Buy Low'}`}
-            onPress={() => router.push({ pathname: '/deal/new', params: { symbol: asset.symbol, goal: g } })}
-          />
-        ) : (
+        paused ? (
+          <Button title="Paused for now" disabled onPress={() => {}} />
+        ) : !live ? (
           notifyButtons
+        ) : noHolding ? (
+          noHoldingFooter
+        ) : (
+          <Button title={`Continue with ${g === 'sell' ? 'Sell High' : 'Buy Low'}`} onPress={() => openWizard(g)} />
         )
       }>
       <Card>
@@ -112,7 +132,17 @@ export default function AssetDetail() {
         ) : null}
       </Card>
 
-      {!live ? (
+      {paused ? (
+        <Card color={colors.warnSoft} style={{ marginTop: space.md }}>
+          <Row gap={space.sm}>
+            <Icon name="clock" />
+            <T v="small" color={colors.ink} style={{ flex: 1 }}>
+              <T v="smallBold">Paused for now.</T> Our price for {asset.name} is out of date, so partners can’t make offers. It reopens on its own once the price is
+              back.
+            </T>
+          </Row>
+        </Card>
+      ) : !live ? (
         <Card color={colors.blueSoft} style={{ marginTop: space.md }}>
           <Row gap={space.sm}>
             <Icon name="info" />
@@ -128,6 +158,19 @@ export default function AssetDetail() {
         <GoalCard selected={g === 'sell'} onPress={() => setGoal('sell')} emoji="⬆️" title="Sell High" line={`I’d sell my ${asset.name} at a higher price`} />
         {canBuy ? <GoalCard selected={g === 'buy'} onPress={() => setGoal('buy')} emoji="⬇️" title="Buy Low" line={`I’d buy ${asset.name} at a lower price`} /> : null}
       </View>
+
+      {noHolding ? (
+        <Card color={colors.warnSoft} style={{ marginTop: space.md }}>
+          <Row gap={space.sm}>
+            <Icon name="wallet" />
+            <T v="small" color={colors.ink} style={{ flex: 1 }}>
+              <T v="smallBold">You don’t hold any {asset.ticker} yet.</T> Sell High needs some to lock.
+              {practiceOk ? ` You can get free practice ${asset.ticker}.` : ` Practice ${asset.ticker} isn’t available yet.`}
+              {canBuy ? ' Buy Low works with the dollars you have.' : ''}
+            </T>
+          </Row>
+        </Card>
+      ) : null}
 
       {example && end ? (
         <>

@@ -11,6 +11,15 @@ import { fmtDay, fmtPrice, fmtTime, fmtUsd } from '@/domain/format';
 import { useStore } from '@/store/app-store';
 import { colors, space, sticker } from '@/theme';
 
+/**
+ * The deal is open, so the screens that built it (asset, wizard, review) are done. Clear them off the
+ * stack and open the deal over My Deals, so Back goes to My Deals instead of the spent review screen.
+ */
+function seeDeal(id: string) {
+  router.dismissTo('/(tabs)/deals');
+  router.push({ pathname: '/deal/[id]', params: { id } });
+}
+
 export default function Success() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { state } = useStore();
@@ -25,10 +34,10 @@ export default function Success() {
       scroll={false}
       footer={
         <View style={{ gap: space.sm }}>
-          <Button title="See my deal" onPress={() => router.replace({ pathname: '/deal/[id]', params: { id: deal.id } })} />
+          <Button title="See my deal" onPress={() => seeDeal(deal.id)} />
           <Row gap={space.sm}>
-            <Button title="Plant another" kind="secondary" style={{ flex: 1 }} onPress={() => router.replace('/(tabs)/earn')} />
-            <Button title="Home" kind="secondary" style={{ flex: 1 }} onPress={() => router.replace('/(tabs)')} />
+            <Button title="Plant another" kind="secondary" style={{ flex: 1 }} onPress={() => router.dismissTo('/(tabs)/earn')} />
+            <Button title="Home" kind="secondary" style={{ flex: 1 }} onPress={() => router.dismissTo('/(tabs)')} />
           </Row>
         </View>
       }>
